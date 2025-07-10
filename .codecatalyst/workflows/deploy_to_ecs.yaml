@@ -1,0 +1,36 @@
+SchemaVersion: 1.0
+Name: deploy_to_ecs
+
+Triggers:
+  - Type: Push
+    Branches:
+      - main
+
+Actions:
+  build_and_push:
+    Identifier: aws/build@v1
+    Environment:
+      Name: env-deploy-frontend
+      Connections:
+        - Name: aws
+          Role: CodeCatalystWorkflowDevelopmentRole-nitaokta-lab
+    Configuration:
+      Steps:
+        - Run: |
+            cd backend
+            docker build -t 022717055444.dkr.ecr.ap-southeast-1.amazonaws.com/demo-backend:latest .
+            aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 022717055444.dkr.ecr.ap-southeast-1.amazonaws.com
+            docker push 022717055444.dkr.ecr.ap-southeast-1.amazonaws.com/demo-backend:latest
+
+  deploy:
+    Identifier: aws/ecs-deploy@v1
+    Environment:
+      Name: env-deploy-frontend
+      Connections:
+        - Name: aws
+          Role: CodeCatalystWorkflowDevelopmentRole-nitaokta-lab
+    Configuration:
+      cluster: ClusterOne
+      service: demo-service
+      region: ap-southeast-1
+      task-definition: demo-task
